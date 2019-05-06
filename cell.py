@@ -13,6 +13,9 @@ class LSTMCell(tf.contrib.rnn.RNNCell):
         self.dropout_keep_prob = dropout_keep_prob
         self.cur_time =0
 
+    def get_newch(self, state, x, cur_time, RL):
+
+
     def __call__(self, x, state, scope = None):
         with tf.variable_scope(scope or type(self).__name__):
             batch_size = x.get_shape().as_list()[0]
@@ -26,3 +29,7 @@ class LSTMCell(tf.contrib.rnn.RNNCell):
                 self.RL.act_prob=[]
                 c, h = state
                 self.RL.choose_action(tf.concat([x,h],1), cur_time)
+                self.C_state = tf.reshape(tf.tile(tf.reshape(tf.zeros_like(c, dtype=tf.float32),[-1]),[self.RL.n_actions]), [self.RL.n_actions, batch_size, self.num_units])
+                self.H_state = tf.reshape(tf.tile(tf.reshape(tf.zeros_like(h, dtype=tf.float32),[-1]),[self.RL.n_actions]), [self.RL.n_actions, batch_size, self.num_units])
+            else:
+                c, h = self.get_newch(state, x, cur_time, self.RL)
