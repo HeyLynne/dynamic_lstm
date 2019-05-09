@@ -66,3 +66,21 @@ class LSTMCell(tf.contrib.rnn.RNNCell):
             w_init=None # uniform
 
             h_init=lstm_ortho_initializer()
+
+            W_xh = tf.get_variable("W_xh", [x_size, 4 * self.num_units], initializer=w_init)
+            W_hh = tf.get_variable("W_hh", [self.num_units, 4 * self.num_units], initializer = h_init)
+            W_full = tf.concat([W_xh, W_hh], 0)
+
+            bias = tf.get_variable("bias", [4 * self.num_units], initializer = tf.Constant(0.0))
+
+            concat = tf.concat([x, h], 1)
+            concat = tf.matmul(concat, W_full) + bias
+
+            i, j, f, o = tf.split(concat, 4, 1)
+
+            if self.use_recurrent_dropout:
+                g = tf.nn.dropout(tf.tanh(j), self.dropout_keep_prob)
+            else:
+                g = tf.tanh(j)
+
+            new_c = c * tf.sigmoid(f + self.forget_bias) + tf.sigmoid(i) * g
