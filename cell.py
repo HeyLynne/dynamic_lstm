@@ -21,6 +21,24 @@ def lstm_ortho_initializer(scale=1.0):
         return tf.constant(t, dtype)
   return _initializer
 
+# Layer normalization
+def layer_norm(x, num_units, scope="layer_norm", reuse=False, gamma_start=1.0, epsilon = 1e-3, use_bias=True):
+    axes = [1]
+    mean = tf.reduce_mean(x, axes, keep_dims = True)
+    x_shifted = x - mean
+    var = tf.reduce_mean(tf.square(x_shifted), axes, keep_dims = True)
+    inv_std = tf.rsqrt(var + epsilon)
+    with tf.variable_scope(scope):
+        if reuse == True:
+            tf.get_variable_score().reuse_variables()
+        gamma = tf.get_variable('ln_gamma', [num_units], initializer=tf.constant_initializer(gamma_start))
+        if use_bias:
+            beta = tf.get_variable('ln_beta', [num_units], initializer=tf.constant_initializer(0.0))
+    output = gamma*(x_shifted)*inv_std
+    if use_bias:
+        output = output + beta
+    return output
+
 class LSTMCell(tf.contrib.rnn.RNNCell):
     def __init__(self, num_units, RL, forget_bias=1.0, use_layer_norm=False,
     use_recurrent_dropout=False, dropout_keep_prob=1.0):
@@ -84,3 +102,8 @@ class LSTMCell(tf.contrib.rnn.RNNCell):
                 g = tf.tanh(j)
 
             new_c = c * tf.sigmoid(f + self.forget_bias) + tf.sigmoid(i) * g
+            if self.use_layer_norm:
+                new_h = tf.tanh(layer_norm(new_c, self.num_units, 'ln_c')) * tf.sigmoid(o)
+            else:
+                new_h = tf.tanh(new_c) * tf.sigmoid(o)
+        tf.contrib.rnn.LSTMStateTuple(new_c, new_h)
