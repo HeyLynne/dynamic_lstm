@@ -18,6 +18,8 @@ def inference_graph(word_vocab_size=10000,  # configuration of medium
                     lamda=0.5
                     ):
     input_word = tf.placeholder(tf.int32, shape = [batch_size, num_unroll_steps], name = "input")
+    with tf.variable_scope("Embedding"):
+
 
 if __name__ == "__main__":
     with tf.Session() as sess:
